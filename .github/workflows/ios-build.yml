@@ -29,7 +29,8 @@ jobs:
             echo "::error::${line//$GITHUB_WORKSPACE\//}"
           done
           grep -A 6 "The following build commands failed" build.log | head -9 | while IFS= read -r line; do echo "::warning::${line}"; done
-          grep -E "Stack dump|error: |fatal error|Assertion" build.log | grep -v "\.swift:[0-9]" | sort -u | head -9 | while IFS= read -r line; do echo "::notice::${line:0:400}"; done
+          grep -E "^[0-9]+\.\s+(While|Compiling|Contents of|Apple Swift)" build.log | sort -u | head -6 | while IFS= read -r line; do echo "::notice::${line:0:400}"; done
+          grep -E "fatal error|Assertion" build.log | grep -v "\.swift:[0-9]" | sort -u | head -9 | while IFS= read -r line; do echo "::notice::${line:0:400}"; done
           grep -q "BUILD SUCCEEDED" build.log || exit 1
 
       - name: Keep the build log

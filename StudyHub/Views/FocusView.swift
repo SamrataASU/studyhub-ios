@@ -409,19 +409,20 @@ struct FocusScreen: View {
                 emoji: "🌲",
                 title: "You've been focusing for 1 hour 50 minutes",
                 message: "Amazing work. Take a 10-minute break so you come back sharper.\n\n“\(Growth.breakQuotes[Int(total) % Growth.breakQuotes.count])”",
-                primary: ("Start 10-minute break", { focus.startBreak() }),
-                secondary: ("Keep focusing", { focus.keepFocusing() }),
+                primary: PromptAction(title: "Start 10-minute break") { focus.startBreak() },
+                secondary: PromptAction(title: "Keep focusing") { focus.keepFocusing() },
                 tertiary: nil
             )
         } else if focus.blockFinished(at: now) {
-            let same: (String, @MainActor () -> Void)? = focus.blockMinutes == 25 ? nil
-                : ("+\(focus.blockMinutes) more minutes", { focus.extend(minutes: focus.blockMinutes) })
+            let minutes = focus.blockMinutes
+            let same: PromptAction? = minutes == 25 ? nil
+                : PromptAction(title: "+\(minutes) more minutes") { focus.extend(minutes: minutes) }
             PromptCard(
                 emoji: "🎉",
                 title: "Session complete!",
                 message: "You focused for \(Int(total / 60)) minutes. \(Growth.title(total / 60)). Keep going to grow it bigger.",
-                primary: ("+25 more minutes", { focus.extend(minutes: 25) }),
-                secondary: ("Finish", { focus.finish() }),
+                primary: PromptAction(title: "+25 more minutes") { focus.extend(minutes: 25) },
+                secondary: PromptAction(title: "Finish") { focus.finish() },
                 tertiary: same
             )
         }
@@ -435,13 +436,18 @@ struct FocusScreen: View {
     }
 }
 
+private struct PromptAction {
+    let title: String
+    let action: () -> Void
+}
+
 private struct PromptCard: View {
     let emoji: String
     let title: String
     let message: String
-    let primary: (String, @MainActor () -> Void)
-    let secondary: (String, @MainActor () -> Void)
-    let tertiary: (String, @MainActor () -> Void)?
+    let primary: PromptAction
+    let secondary: PromptAction
+    let tertiary: PromptAction?
 
     var body: some View {
         ZStack {
@@ -455,18 +461,18 @@ private struct PromptCard: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                Button(action: primary.1) {
-                    Text(primary.0).font(.headline).frame(maxWidth: .infinity)
+                Button(action: primary.action) {
+                    Text(primary.title).font(.headline).frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Theme.mint.opacity(0.85))
                 .controlSize(.large)
                 if let t = tertiary {
-                    Button(action: t.1) { Text(t.0).frame(maxWidth: .infinity) }
+                    Button(action: t.action) { Text(t.title).frame(maxWidth: .infinity) }
                         .buttonStyle(.bordered)
                         .controlSize(.large)
                 }
-                Button(secondary.0, action: secondary.1)
+                Button(secondary.title, action: secondary.action)
                     .foregroundStyle(.secondary)
             }
             .padding(24)
