@@ -18,7 +18,7 @@ struct TodayView: View {
                         allClearCard
                     }
                     statsRow
-                    FocusTimerCard()
+                    FocusCard()
                     section("Today", items: store.items(on: .now), empty: "Nothing scheduled today.", showDate: false)
                     section("Next 7 days", items: nextSevenDays, empty: "No deadlines this week. Get ahead!", showDate: true)
                     if !store.overdue.isEmpty {
@@ -197,100 +197,6 @@ struct SetupCard: View {
                 }
             }
         }
-    }
-}
-
-struct FocusTimerCard: View {
-    @AppStorage("focusMinutes") private var minutes = 25
-    @AppStorage("focusDay") private var focusDay = ""
-    @AppStorage("focusCount") private var focusCount = 0
-    @State private var endDate: Date?
-    @State private var pausedLeft: TimeInterval?
-
-    private var running: Bool { endDate != nil }
-    private var todayKey: String { Date().formatted(.iso8601.year().month().day()) }
-    private var todayCount: Int { focusDay == todayKey ? focusCount : 0 }
-
-    var body: some View {
-        GlassCard {
-            HStack(spacing: 16) {
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    let left = timeLeft(at: context.date)
-                    ZStack {
-                        ProgressRing(progress: 1 - left / Double(minutes * 60), lineWidth: 7, colors: [Theme.mint, Theme.sky])
-                        Text(format(left)).font(.system(.subheadline, design: .rounded).weight(.bold)).monospacedDigit()
-                    }
-                    .frame(width: 72, height: 72)
-                    .onChange(of: left <= 0) { _, finished in
-                        if finished && running { complete() }
-                    }
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Focus session").font(.headline)
-                    Text(todayCount == 0 ? "Start a \(minutes)-minute sprint" : "\(todayCount) session\(todayCount == 1 ? "" : "s") done today 🔥")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    HStack(spacing: 8) {
-                        Button(running ? "Pause" : (pausedLeft != nil ? "Resume" : "Start")) { toggle() }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.small)
-                        if running || pausedLeft != nil {
-                            Button("Reset") { reset() }
-                                .buttonStyle(.bordered)
-                                .controlSize(.small)
-                        } else {
-                            Picker("Length", selection: $minutes) {
-                                ForEach([15, 25, 45, 50], id: \.self) { Text("\($0) min").tag($0) }
-                            }
-                            .pickerStyle(.menu)
-                            .labelsHidden()
-                            .controlSize(.small)
-                        }
-                    }
-                }
-                Spacer(minLength: 0)
-            }
-        }
-    }
-
-    private func timeLeft(at date: Date) -> TimeInterval {
-        if let end = endDate { return max(0, end.timeIntervalSince(date)) }
-        if let paused = pausedLeft { return paused }
-        return Double(minutes * 60)
-    }
-
-    private func format(_ t: TimeInterval) -> String {
-        let s = Int(t.rounded(.up))
-        return String(format: "%d:%02d", s / 60, s % 60)
-    }
-
-    private func toggle() {
-        if let end = endDate {
-            pausedLeft = max(0, end.timeIntervalSinceNow)
-            endDate = nil
-            NotificationService.cancelFocusEnd()
-        } else {
-            let end = Date().addingTimeInterval(pausedLeft ?? Double(minutes * 60))
-            endDate = end
-            pausedLeft = nil
-            NotificationService.scheduleFocusEnd(at: end)
-        }
-    }
-
-    private func reset() {
-        endDate = nil
-        pausedLeft = nil
-        NotificationService.cancelFocusEnd()
-    }
-
-    private func complete() {
-        endDate = nil
-        pausedLeft = nil
-        if focusDay != todayKey {
-            focusDay = todayKey
-            focusCount = 0
-        }
-        focusCount += 1
     }
 }
 

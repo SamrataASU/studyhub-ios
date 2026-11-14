@@ -76,16 +76,18 @@ enum NotificationService {
         center.add(UNNotificationRequest(identifier: "daily-news", content: content, trigger: trigger))
     }
 
-    static func scheduleFocusEnd(at date: Date) {
+    static func scheduleFocus(id: String, at date: Date, title: String, body: String) {
         let content = UNMutableNotificationContent()
-        content.title = "Focus session complete 🎉"
-        content.body = "Nice work. Take a 5-minute break, then go again."
+        content.title = title
+        content.body = body
         content.sound = .default
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, date.timeIntervalSinceNow), repeats: false)
-        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "focus-end", content: content, trigger: trigger))
+        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
     }
 
-    static func cancelFocusEnd() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["focus-end"])
+    static func cancelFocus() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: ["focus-end", "focus-break", "focus-break-end"]
+        )
     }
 }

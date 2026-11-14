@@ -3,11 +3,13 @@ import SwiftUI
 @main
 struct StudyHubApp: App {
     @StateObject private var store = StudyStore()
+    @StateObject private var focus = FocusTimer()
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(store)
+                .environmentObject(focus)
                 .preferredColorScheme(.dark)
                 .tint(Theme.violet)
             #if os(macOS)
@@ -19,6 +21,7 @@ struct StudyHubApp: App {
 
 struct RootView: View {
     @EnvironmentObject var store: StudyStore
+    @EnvironmentObject var focus: FocusTimer
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -43,6 +46,9 @@ struct RootView: View {
                 try? await Task.sleep(for: .seconds(900))
                 await store.refresh()
             }
+        }
+        .fullScreenCover(isPresented: $focus.isPresented) {
+            FocusScreen().environmentObject(focus)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await store.refresh() } }
