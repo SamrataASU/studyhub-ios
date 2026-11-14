@@ -25,10 +25,11 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build > build.log 2>&1 || true
           # Turn compiler errors into readable annotations on the run page
-          grep -iE "error|failed" build.log | grep -v "^ *export " | sort -u | head -40 | while IFS= read -r line; do
+          grep -E "\.swift:[0-9]+:[0-9]+: error" build.log | sort -u | head -9 | while IFS= read -r line; do
             echo "::error::${line//$GITHUB_WORKSPACE\//}"
           done
-          tail -15 build.log | while IFS= read -r line; do echo "::warning::${line}"; done
+          grep -A 6 "The following build commands failed" build.log | head -9 | while IFS= read -r line; do echo "::warning::${line}"; done
+          grep -E "Stack dump|error: |fatal error|Assertion" build.log | grep -v "\.swift:[0-9]" | sort -u | head -9 | while IFS= read -r line; do echo "::notice::${line:0:400}"; done
           grep -q "BUILD SUCCEEDED" build.log
 
       - name: Keep the build log
